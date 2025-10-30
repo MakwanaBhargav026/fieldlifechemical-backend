@@ -11,14 +11,14 @@ const productSchema = new mongoose.Schema({
     enum: ['Insecticides', 'Fungicides', 'Weedicides', 'Plant Growth Regulators']
   },
   image: {
-    type: String
+    type: String, // will store ImageKit URL
   },
   description: {
     type: String
   }
 }, {
   timestamps: true,
-  collection: 'product'  // Specify the exact collection name
+  collection: 'product'
 });
 
 module.exports = mongoose.model('Product', productSchema, 'product');

@@ -1,87 +1,64 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const path = require('path');
-const fs = require('fs');
+const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const productRoutes = require('./routes/productRoutes');
 const userRoutes = require('./routes/userRoutes');
 
 // Load environment variables
-require('dotenv').config();
+dotenv.config();
 
 // Initialize Express app
 const app = express();
 
-// Connect to Database
+// Connect MongoDB
 connectDB();
 
-// use PORT, MONGODB_URI, FRONTEND_ORIGINS
+// Use environment variables
 const PORT = process.env.PORT || 5000;
 const FRONTEND_ORIGINS = (process.env.FRONTEND_ORIGINS || '')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
 
-// CORS Configuration - Update this section
+// ✅ CORS setup
 const corsOptions = {
-  origin: function(origin, callback) {
+  origin: function (origin, callback) {
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:5173',
-      'http://localhost:5174', // Add this line
+      'http://localhost:5174',
       'http://127.0.0.1:3000',
       'http://127.0.0.1:5173',
-      'http://127.0.0.1:5174'  // Add this line
+      'http://127.0.0.1:5174'
     ];
-    
-    // Allow requests with no origin (like mobile apps or curl requests)
+
     if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
     }
-    return callback(null, true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 };
 
-// Place this before your routes
 app.use(cors(corsOptions));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Middleware
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-// Make sure uploads directory exists
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-  console.log('✅ Uploads directory created');
-}
-
-// Serve static files from uploads directory
-app.use('/uploads', express.static(uploadsDir));
-
-// Add logging middleware to see all requests
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  next();
-});
-
-// Routes
+// 🧩 Routes
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
 
-// Root route
+// 🏠 Root route
 app.get('/', (req, res) => {
-  res.json({ 
-    message: 'FieldLife API Server',
+  res.json({
+    message: '🌱 FieldLife API Server Running',
     version: '1.0.0',
-    status: 'running',
     endpoints: {
       products: '/api/products',
       users: '/api/users',
@@ -90,42 +67,37 @@ app.get('/', (req, res) => {
   });
 });
 
-// Health check route
+// 💚 Health route
 app.get('/health', (req, res) => {
-  res.json({ 
+  res.json({
     status: 'OK',
-    timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
 
-// Error handling middleware
+// 🧱 Error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err.stack);
-  res.status(err.status || 500).json({ 
-    success: false, 
-    message: err.message || 'Something went wrong!',
-    error: process.env.NODE_ENV === 'development' ? err.stack : {}
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal server error'
   });
 });
 
-// 404 handler - must be last
+// 404 Handler
 app.use((req, res) => {
-  res.status(404).json({ 
-    success: false, 
-    message: `Route ${req.originalUrl} not found` 
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.originalUrl} not found`
   });
 });
 
-// Start server
+// 🚀 Start server
 app.listen(PORT, () => {
   console.log('========================================');
-  console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📡 API: http://localhost:${PORT}`);
-  console.log(`📦 Products API: http://localhost:${PORT}/api/products`);
-  console.log(`📁 Uploads: http://localhost:${PORT}/uploads`);
-  console.log(`💚 Health Check: http://localhost:${PORT}/health`);
   console.log('========================================');
 });
 
