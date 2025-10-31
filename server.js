@@ -26,6 +26,7 @@ const FRONTEND_ORIGINS = (process.env.FRONTEND_ORIGINS || '')
 const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = [
+      'https://fieldlifechemical-admin.onrender.com/',
       'https://fieldlifechemical.com',
       'http://localhost:3000',
       'http://localhost:5173',
